@@ -12,7 +12,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             SELECT
             	*
             FROM
-            	"product-demo".product p
+            	product p
             WHERE
             	p.product_id >= :start
             ORDER BY

@@ -32,7 +32,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductDto saveProduct(ProductDto productDto) {
         if (null != productDto) {
-           return productMapper.productToProductDto(productRepository.save(productMapper.productDtoToProduct(productDto)));
+            return productMapper.productToProductDto(productRepository.save(productMapper.productDtoToProduct(productDto)));
         }
         return null;
     }
