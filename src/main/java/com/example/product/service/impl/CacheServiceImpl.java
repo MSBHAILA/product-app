@@ -4,10 +4,10 @@ import com.example.product.dao.ProductRepository;
 import com.example.product.dto.ProductDto;
 import com.example.product.mapper.ProductMapper;
 import com.example.product.service.CacheService;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.map.IMap;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 public class CacheServiceImpl implements CacheService {
 
     @Autowired
-    private CacheManager cacheManager;
+    HazelcastInstance hazelcastInstance;
 
     @Autowired
     ProductMapper productMapper;
@@ -32,22 +32,25 @@ public class CacheServiceImpl implements CacheService {
     public static final int LIMIT = 10;
     public static final int BATCH_SIZE = 50;
 
-    private <T> T getFromCache(String cacheName, String key, Class<T> type) {
-        return Objects.requireNonNull(cacheManager.getCache(cacheName)).get(key, type);
-    }
-
-    private void putInCache(String cacheName, String key, Object value) {
-        Objects.requireNonNull(cacheManager.getCache(cacheName)).put(key, value);
+    private <K, V> IMap<K, V> getCache(String cacheName) {
+        return hazelcastInstance.getMap(cacheName);
     }
 
     @Override
-    @Cacheable(cacheNames = CACHE_PRODUCTS, keyGenerator = "customKeyGenerator")
     public List<ProductDto> getCachedProducts(long start) {
+        String cacheKey = getCacheKey(start);
+        IMap<String, List<ProductDto>> productCache = getCache(CACHE_PRODUCTS);
+        List<ProductDto> cachedProducts = productCache.get(cacheKey);
+        //If data in cache is present, return it.
+        if (!CollectionUtils.isEmpty(cachedProducts)) {
+            return cachedProducts;
+        }
+        //Fetch 50 products from the database and cache it.
         long startIndex = (start / BATCH_SIZE) * BATCH_SIZE;
-        //Fetch 50 products from the database and cache it
         List<ProductDto> products = productMapper.productListToProductDtoList(productRepository.getProducts(startIndex));
         log.info("getProducts | fetch data from db");
         if (!CollectionUtils.isEmpty(products)) {
+            productCache.put(cacheKey, products);
             return products;
         }
         return null;
@@ -56,36 +59,39 @@ public class CacheServiceImpl implements CacheService {
     @Override
     public void addInCache(long start, ProductDto productDto) {
         String cacheKey = getCacheKey(start);
-        List<ProductDto> cachedBatch = getFromCache(CACHE_PRODUCTS, cacheKey, List.class);
-        if (cachedBatch != null) {
-            cachedBatch.add(productDto);
-            putInCache(CACHE_PRODUCTS, cacheKey, cachedBatch);
+        IMap<String, List<ProductDto>> productCache = getCache(CACHE_PRODUCTS);
+        List<ProductDto> cachedProducts = productCache.get(cacheKey);
+        if (cachedProducts != null) {
+            cachedProducts.add(productDto);
+            productCache.put(cacheKey, cachedProducts);
         }
     }
 
     @Override
     public void updateCache(long start, ProductDto updatedProduct) {
         String cacheKey = getCacheKey(start);
-        List<ProductDto> cachedBatch = getFromCache(CACHE_PRODUCTS, cacheKey, List.class);
-        if (cachedBatch != null) {
-            cachedBatch = cachedBatch.stream()
+        IMap<String, List<ProductDto>> productCache = getCache(CACHE_PRODUCTS);
+        List<ProductDto> cachedProducts = productCache.get(cacheKey);
+        if (!CollectionUtils.isEmpty(cachedProducts)) {
+            cachedProducts = cachedProducts.stream()
                     .map(p -> Objects.equals(p.getProductId(), updatedProduct.getProductId())
                             ? updatedProduct
                             : p)
-                    .collect(Collectors.toList());
-            putInCache(CACHE_PRODUCTS, cacheKey, cachedBatch);
+                    .toList();
+            productCache.put(cacheKey, cachedProducts);
         }
     }
 
     @Override
     public void deleteFromCache(long start) {
         String cacheKey = getCacheKey(start);
-        List<ProductDto> cachedBatch = getFromCache(CACHE_PRODUCTS, cacheKey, List.class);
-        if (cachedBatch != null) {
-            cachedBatch = cachedBatch.stream()
+        IMap<String, List<ProductDto>> productCache = getCache(CACHE_PRODUCTS);
+        List<ProductDto> cachedProducts = productCache.get(cacheKey);
+        if (!CollectionUtils.isEmpty(cachedProducts)) {
+            cachedProducts = cachedProducts.stream()
                     .filter(p -> p.getProductId() < start || p.getProductId() > start + LIMIT - 1)
                     .collect(Collectors.toList());
-            putInCache(CACHE_PRODUCTS, cacheKey, cachedBatch);
+            productCache.put(cacheKey, cachedProducts);
         }
     }
 

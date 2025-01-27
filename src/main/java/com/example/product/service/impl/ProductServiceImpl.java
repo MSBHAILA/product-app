@@ -8,13 +8,10 @@ import com.example.product.service.CacheService;
 import com.example.product.service.ProductService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -33,7 +30,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public List<ProductDto> getProducts(long start) {
         List<ProductDto> cachedBatch = cacheService.getCachedProducts(start);
-        if(null != cachedBatch) {
+        if (null != cachedBatch) {
             //From the cached data, send only 10 products to the user
             return cachedBatch.stream()
                     .filter(product -> product.getProductId() >= start && product.getProductId() < start + 10)
