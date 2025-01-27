@@ -4,16 +4,18 @@ import com.example.product.dao.ProductRepository;
 import com.example.product.dto.ProductDto;
 import com.example.product.entity.Product;
 import com.example.product.mapper.ProductMapper;
+import com.example.product.service.CacheService;
 import com.example.product.service.ProductService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -25,39 +27,45 @@ public class ProductServiceImpl implements ProductService {
     @Autowired
     ProductRepository productRepository;
 
+    @Autowired
+    CacheService cacheService;
+
     @Override
-    @Cacheable(cacheNames = "products", key = "#start")
-    public List<ProductDto> getProducts(int start) {
-        List<ProductDto> products = productMapper.productListToProductDtoList(productRepository.getProducts(start));
-        log.info("getProducts | fetch data from db");
-        if (!CollectionUtils.isEmpty(products)) {
-            return products;
+    public List<ProductDto> getProducts(long start) {
+        List<ProductDto> cachedBatch = cacheService.getCachedProducts(start);
+        if(null != cachedBatch) {
+            //From the cached data, send only 10 products to the user
+            return cachedBatch.stream()
+                    .filter(product -> product.getProductId() >= start && product.getProductId() < start + 10)
+                    .collect(Collectors.toList());
         }
         return null;
     }
 
     @Override
-    @CacheEvict(cacheNames = "products", allEntries = true)
     public ProductDto saveProduct(ProductDto productDto) {
         if (null != productDto) {
-            return productMapper.productToProductDto(productRepository.save(productMapper.productDtoToProduct(productDto)));
+            ProductDto savedProduct = productMapper.productToProductDto(productRepository.save(productMapper.productDtoToProduct(productDto)));
+            cacheService.addInCache(savedProduct.getProductId(), savedProduct);
+            return savedProduct;
         }
         return null;
     }
 
     @Override
-    @CacheEvict(cacheNames = "products", allEntries = true)
     public ProductDto updateProduct(ProductDto productDto) {
         if (null != productDto && productRepository.existsById(productDto.getProductId())) {
-            return productMapper.productToProductDto(productRepository.save(productMapper.productDtoToProduct(productDto)));
+            ProductDto updatedProduct = productMapper.productToProductDto(productRepository.save(productMapper.productDtoToProduct(productDto)));
+            cacheService.updateCache(productDto.getProductId(), updatedProduct);
+            return updatedProduct;
         }
         return null;
     }
 
     @Override
-    @CacheEvict(cacheNames = "products", key = "#start")
-    public boolean deleteProducts(int start) {
+    public boolean deleteProducts(long start) {
         List<Product> products = productRepository.deleteProducts(start);
+        cacheService.deleteFromCache(start);
         return !CollectionUtils.isEmpty(products);
     }
 }

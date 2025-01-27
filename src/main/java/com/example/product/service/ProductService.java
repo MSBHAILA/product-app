@@ -6,11 +6,11 @@ import java.util.List;
 
 public interface ProductService {
 
-    List<ProductDto> getProducts(int start);
+    List<ProductDto> getProducts(long start);
 
     ProductDto saveProduct(ProductDto productDto);
 
     ProductDto updateProduct(ProductDto productDto);
 
-    boolean deleteProducts(int start);
+    boolean deleteProducts(long start);
 }

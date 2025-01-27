@@ -17,8 +17,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             	p.product_id >= :start
             ORDER BY
             	p.product_id asc
-            LIMIT 10""", nativeQuery = true)
-    List<Product> getProducts(int start);
+            LIMIT 50""", nativeQuery = true)
+    List<Product> getProducts(long start);
 
     @Query(value = """
             DELETE
@@ -27,5 +27,5 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             WHERE
             p.product_id >= :start
             AND p.product_id < (:start + 10) returning *""", nativeQuery = true)
-    List<Product> deleteProducts(int start);
+    List<Product> deleteProducts(long start);
 }
