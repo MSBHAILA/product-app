@@ -11,6 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -38,6 +41,23 @@ public class CacheServiceImpl implements CacheService {
 
     @Override
     public List<ProductDto> getCachedProducts(long start) {
+        long end = start + LIMIT - 1;
+
+        // Determine if there are overlapping batches
+        long batchStart1 = ((start - 1) / BATCH_SIZE) * BATCH_SIZE + 1;
+        long batchStart2 = ((end - 1) / BATCH_SIZE) * BATCH_SIZE + 1;
+
+        // Fetch data from the cache or database for both batches
+        List<ProductDto> products = new ArrayList<>();
+        products.addAll(getProductsFromCacheOrDb(batchStart1));
+        if (batchStart2 != batchStart1) {
+            products.addAll(getProductsFromCacheOrDb(batchStart2));
+        }
+        return products;
+
+    }
+
+    private List<ProductDto> getProductsFromCacheOrDb(long start) {
         String cacheKey = getCacheKey(start);
         IMap<String, List<ProductDto>> productCache = getCache(CACHE_PRODUCTS);
         List<ProductDto> cachedProducts = productCache.get(cacheKey);
@@ -53,7 +73,7 @@ public class CacheServiceImpl implements CacheService {
             productCache.put(cacheKey, products);
             return products;
         }
-        return null;
+        return Collections.emptyList();
     }
 
     @Override
