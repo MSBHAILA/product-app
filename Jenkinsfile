@@ -7,8 +7,8 @@ pipeline {
     }
     
     environment {
-        NEXUS_URL = "your-nexus-server-ip:8082"
-        IMAGE_NAME = "springboot-app"
+        NEXUS_URL = "localhost:8082"
+        IMAGE_NAME = "product-app"
         IMAGE_TAG = "${env.BUILD_NUMBER}"
         NEXUS_CREDENTIALS = credentials('nexus-credentials')
     }
