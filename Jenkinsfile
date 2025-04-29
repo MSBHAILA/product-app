@@ -6,7 +6,7 @@ pipeline {
     }
     
     environment {
-        NEXUS_URL = "localhost:8082"
+        NEXUS_URL = "host.docker.internal:8082"
         IMAGE_NAME = "product-app"
         IMAGE_TAG = "${env.BUILD_NUMBER}"
         NEXUS_CREDENTIALS = credentials('nexus-credentials')
