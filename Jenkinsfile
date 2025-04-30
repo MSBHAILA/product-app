@@ -14,10 +14,10 @@ pipeline {
     
     stages {
         stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
+    steps {
+        git branch: 'master', url: 'https://github.com/MSBHAILA/product-app'
+    }
+}
         
         stage('Build Application') {
             steps {
