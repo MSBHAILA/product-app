@@ -25,7 +25,8 @@ pipeline {
             }
         }
         
-        steps {
+        stage('Build and Push Docker Image') {
+            steps {
                 withCredentials([usernamePassword(credentialsId: 'nexus-credentials', passwordVariable: 'NEXUS_PASSWORD', usernameVariable: 'NEXUS_USERNAME')]) {
                     sh '''
                         sudo docker login -u ${NEXUS_USERNAME} -p ${NEXUS_PASSWORD} http://${NEXUS_URL}
@@ -36,6 +37,7 @@ pipeline {
                     '''
                 }
             }
+        }
     }
     
     post {
