@@ -25,17 +25,17 @@ pipeline {
             }
         }
         
-        stage('Build and Push Docker Image') {
-            steps {
-                script {
-                    docker.withRegistry("http://${NEXUS_URL}", 'nexus-credentials') {
-                        def customImage = docker.build("${NEXUS_URL}/${IMAGE_NAME}:${IMAGE_TAG}")
-                        customImage.push()
-                        customImage.push('latest')
-                    }
+        steps {
+                withCredentials([usernamePassword(credentialsId: 'nexus-credentials', passwordVariable: 'NEXUS_PASSWORD', usernameVariable: 'NEXUS_USERNAME')]) {
+                    sh '''
+                        sudo docker login -u ${NEXUS_USERNAME} -p ${NEXUS_PASSWORD} http://${NEXUS_URL}
+                        sudo docker build -t ${NEXUS_URL}/${IMAGE_NAME}:${IMAGE_TAG} .
+                        sudo docker push ${NEXUS_URL}/${IMAGE_NAME}:${IMAGE_TAG}
+                        sudo docker tag ${NEXUS_URL}/${IMAGE_NAME}:${IMAGE_TAG} ${NEXUS_URL}/${IMAGE_NAME}:latest
+                        sudo docker push ${NEXUS_URL}/${IMAGE_NAME}:latest
+                    '''
                 }
             }
-        }
     }
     
     post {
