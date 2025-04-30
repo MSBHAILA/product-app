@@ -18,7 +18,6 @@ pipeline {
                 checkout scm
             }
         }
-}
         
         stage('Build Application') {
             steps {
