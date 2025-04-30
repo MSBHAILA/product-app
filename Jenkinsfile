@@ -29,11 +29,11 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'nexus-credentials', passwordVariable: 'NEXUS_PASSWORD', usernameVariable: 'NEXUS_USERNAME')]) {
                     sh '''
-                        sudo docker login -u ${NEXUS_USERNAME} -p ${NEXUS_PASSWORD} http://${NEXUS_URL}
-                        sudo docker build -t ${NEXUS_URL}/${IMAGE_NAME}:${IMAGE_TAG} .
-                        sudo docker push ${NEXUS_URL}/${IMAGE_NAME}:${IMAGE_TAG}
-                        sudo docker tag ${NEXUS_URL}/${IMAGE_NAME}:${IMAGE_TAG} ${NEXUS_URL}/${IMAGE_NAME}:latest
-                        sudo docker push ${NEXUS_URL}/${IMAGE_NAME}:latest
+                        docker login -u ${NEXUS_USERNAME} -p ${NEXUS_PASSWORD} http://${NEXUS_URL}
+                        docker build -t ${NEXUS_URL}/${IMAGE_NAME}:${IMAGE_TAG} .
+                        docker push ${NEXUS_URL}/${IMAGE_NAME}:${IMAGE_TAG}
+                        docker tag ${NEXUS_URL}/${IMAGE_NAME}:${IMAGE_TAG} ${NEXUS_URL}/${IMAGE_NAME}:latest
+                        docker push ${NEXUS_URL}/${IMAGE_NAME}:latest
                     '''
                 }
             }
