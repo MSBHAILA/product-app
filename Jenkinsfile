@@ -6,7 +6,7 @@ pipeline {
     }
     
     environment {
-        NEXUS_URL = "nexus:8082"
+        NEXUS_URL = "172.20.0.3:8082"
         IMAGE_NAME = "product-app"
         IMAGE_TAG = "${env.BUILD_NUMBER}"
         NEXUS_CREDENTIALS = credentials('nexus-credentials')
