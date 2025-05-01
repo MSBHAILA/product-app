@@ -27,11 +27,13 @@ pipeline {
         
         stage('Build and Push Docker Image') {
             steps {
-                docker.withServer('tcp://host.docker.internal:2375') {
-                    def customImage = docker.build("${NEXUS_URL}/${IMAGE_NAME}:${IMAGE_TAG}")
-                    docker.withRegistry("http://${NEXUS_URL}", 'nexus-credentials') {
-                        customImage.push()
-                        echo "Pushed image: ${customImage.imageName()}"
+                script {
+                    docker.withServer('tcp://host.docker.internal:2375') {
+                        def customImage = docker.build("${NEXUS_URL}/${IMAGE_NAME}:${IMAGE_TAG}")
+                        docker.withRegistry("http://${NEXUS_URL}", 'nexus-credentials') {
+                            customImage.push()
+                            echo "Pushed image: ${customImage.imageName()}"
+                        }
                     }
                 }
             }
